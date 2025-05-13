@@ -10,8 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
-
 import java.time.LocalDateTime;
 
 import id.ac.ui.cs.advprog.manajemen_iklan.enums.IklanStatus;
@@ -26,7 +24,6 @@ public class IklanModel {
     
     @Id
     @GeneratedValue(generator = "uuid")
-    @GenericGenerator(name = "uuid", strategy = "uuid2")
     private String id;
     
     @Column(nullable = false)
