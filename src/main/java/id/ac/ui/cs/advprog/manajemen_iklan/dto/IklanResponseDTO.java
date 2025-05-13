@@ -9,7 +9,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class IklanResponsesDTO {
+public class IklanResponseDTO {
     private int code;
     private boolean success;
     private String message;
