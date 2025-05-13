@@ -14,7 +14,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
 
-import id.ac.ui.cs.advprog.manajemen.iklan.enums.IklanStatus;
+import id.ac.ui.cs.advprog.manajemen_iklan.enums.IklanStatus;
 
 @Data
 @Builder
