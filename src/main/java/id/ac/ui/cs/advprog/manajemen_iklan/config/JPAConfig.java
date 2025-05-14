@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Configuration
 @EnableJpaAuditing
-@EnableJpaRepositories(basePackages = "id.ac.ui.cs.advprog.manajemen.iklan.repository")
+@EnableJpaRepositories(basePackages = "id.ac.ui.cs.advprog.manajemen_iklan.repository")
 public class JPAConfig {
 
     @Bean
