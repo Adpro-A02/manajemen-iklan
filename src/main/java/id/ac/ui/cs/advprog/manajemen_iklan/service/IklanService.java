@@ -23,4 +23,5 @@ public interface IklanService {
     IklanResponseDTO updateAdvertisement(String id, IklanDTO iklanDTO);
     IklanResponseDTO updateAdvertisementStatus(String id, IklanStatus status);
     IklanResponseDTO deleteAdvertisement(String id);
+    IklanResponseDTO getPublicAdvertisements(String position, Integer limit);
 }
