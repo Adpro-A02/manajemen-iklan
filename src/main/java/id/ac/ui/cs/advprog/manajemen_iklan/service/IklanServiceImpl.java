@@ -21,6 +21,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -88,9 +89,9 @@ public class IklanServiceImpl implements IklanService {
         IklanModel iklan = findIklanById(id);
         
         return createDetailResponse(
-                mapToDTO(iklan),
-                HttpStatus.OK.value(),
-                "Iklan berhasil diambil"
+        mapToDTO(iklan),
+        HttpStatus.OK.value(),
+        "Detail iklan berhasil diambil"  // Updated message to match documentation
         );
     }
     
@@ -160,11 +161,18 @@ public class IklanServiceImpl implements IklanService {
         
         IklanModel updatedIklan = iklanRepository.save(existingIklan);
         
-        return createDetailResponse(
-                mapToDTO(updatedIklan),
-                HttpStatus.OK.value(),
-                "Status iklan berhasil diperbarui"
-        );
+        // Create simplified response with only required fields
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("id", updatedIklan.getId());
+        responseData.put("status", updatedIklan.getStatus().toString().toLowerCase());
+        responseData.put("updatedAt", updatedIklan.getUpdatedAt());
+        
+        return IklanResponseDTO.builder()
+            .code(HttpStatus.OK.value())
+            .success(true)
+            .message("Status iklan berhasil diperbarui")
+            .data(responseData)
+            .build();
     }
     
     @Override
