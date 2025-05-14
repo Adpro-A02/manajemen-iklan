@@ -13,12 +13,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -199,9 +203,61 @@ public class IklanServiceImpl implements IklanService {
         iklan.setClicks(iklan.getClicks() + 1);
         iklanRepository.save(iklan);
     }
+
+    @Override
+    @Cacheable(value = "publicAdvertisementsCache", key = "{#position, #limit}")
+    @CacheEvict(value = "advertisementsCache", allEntries = true)
+    public IklanResponseDTO getPublicAdvertisements(String position, Integer limit) {
+        logger.debug("Fetching public advertisements with position: {}, limit: {}", position, limit); 
+        int maxResults = (limit == null || limit < 1) ? 3 : limit;
+        
+        Specification<IklanModel> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("status"), IklanStatus.ACTIVE));  
+            LocalDateTime now = LocalDateTime.now();
+            predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("startDate"), now));
+            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("endDate"), now));
+            
+            if (position != null && !position.isEmpty()) {
+                predicates.add(criteriaBuilder.equal(root.get("position"), position));
+            }
+            
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+        
+        // Fetch a limited number of advertisements
+        Pageable pageable = PageRequest.of(0, maxResults, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<IklanModel> advertisementsPage = iklanRepository.findAll(spec, pageable);
+        
+        logger.debug("Found {} public advertisements", advertisementsPage.getNumberOfElements());
+        
+        // Map to simplified DTOs for public consumption
+        List<IklanDTO> publicAdDTOs = advertisementsPage.getContent().stream()
+                .map(this::mapToPublicDTO)
+                .collect(Collectors.toList());
+        
+        // Create response without pagination
+        return IklanResponseDTO.builder()
+                .code(HttpStatus.OK.value())
+                .success(true)
+                .message("Daftar iklan berhasil diambil")
+                .data(Map.of("advertisements", publicAdDTOs))
+                .build();
+    }
+
+    // Helper method to map IklanModel to simplified public DTO
+    private IklanDTO mapToPublicDTO(IklanModel model) {
+        return IklanDTO.builder()
+                .id(model.getId())
+                .title(model.getTitle())
+                .imageUrl(model.getImageUrl())
+                .clickUrl(model.getClickUrl())
+                .build();
+    }
     
+// extra
+
     // Validation methods
-    
     private void validateId(String id) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("ID iklan tidak boleh kosong");
