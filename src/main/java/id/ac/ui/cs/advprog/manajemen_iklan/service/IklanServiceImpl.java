@@ -10,17 +10,23 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @RequiredArgsConstructor
 public class IklanServiceImpl implements IklanService {
-    
+    private static final Logger logger = LoggerFactory.getLogger(IklanServiceImpl.class);
     private final IklanRepository iklanRepository;
     
     @Override
+    @Cacheable(value = "advertisementsCache", 
+               key = "{#page, #limit, #statusParam, #startDateFrom, #startDateTo, #endDateFrom, #endDateTo, #search}",
+               condition = "#search == null || #search.length() > 3")
     public IklanResponseDTO getAllAdvertisements(
             Integer page,
             Integer limit,
@@ -31,6 +37,9 @@ public class IklanServiceImpl implements IklanService {
             LocalDateTime endDateTo,
             String search) {
         
+        logger.debug("Fetching advertisements with filters: status={}, startDateFrom={}, startDateTo={}, endDateFrom={}, endDateTo={}, search={}, page={}, limit={}",
+                statusParam, startDateFrom, startDateTo, endDateFrom, endDateTo, search, page, limit);
+        
         // Set default values if null
         int pageNumber = (page == null || page < 1) ? 0 : page - 1;
         int pageSize = (limit == null || limit < 1) ? 10 : Math.min(limit, 50);
@@ -39,10 +48,24 @@ public class IklanServiceImpl implements IklanService {
         IklanStatus status = null;
         if (statusParam != null && !statusParam.isEmpty()) {
             try {
-                status = IklanStatus.valueOf(statusParam.toUpperCase());
+                // Improved case insensitive parsing
+                switch(statusParam.toLowerCase()) {
+                case "active":
+                        status = IklanStatus.ACTIVE;
+                        break;
+                case "inactive":
+                        status = IklanStatus.INACTIVE;
+                        break;
+                case "expired":
+                        status = IklanStatus.EXPIRED;
+                        break;
+                default:
+                    logger.warn("Invalid status value provided: {}", statusParam);
+                    status = null;
+                }
             } catch (IllegalArgumentException e) {
-                // Handle invalid status value
-                // For now, im setting it to null
+                logger.error("Error parsing status value: {}", statusParam, e);
+                status = null;
             }
         }
         
@@ -58,6 +81,8 @@ public class IklanServiceImpl implements IklanService {
                 endDateTo,
                 search,
                 pageable);
+        
+        logger.debug("Found {} advertisements matching the criteria", advertisementsPage.getTotalElements());
         
         // Map entities to DTOs
         List<IklanDTO> advertisementDTOs = advertisementsPage.getContent().stream()
