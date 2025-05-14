@@ -174,23 +174,29 @@ public class IklanServiceImpl implements IklanService {
     
     private IklanModel createIklanModelFromDTO(IklanDTO dto) {
         return IklanModel.builder()
-                .title(dto.getTitle())
-                .imageUrl(dto.getImageUrl())
-                .startDate(dto.getStartDate())
-                .endDate(dto.getEndDate())
-                .status(dto.getStatus() != null ? dto.getStatus() : IklanStatus.INACTIVE)
-                .clickUrl(dto.getClickUrl())
-                .build();
+            .title(dto.getTitle())
+            .description(dto.getDescription())
+            .imageUrl(dto.getImageUrl())
+            .startDate(dto.getStartDate())
+            .endDate(dto.getEndDate())
+            .status(dto.getStatus() != null ? dto.getStatus() : IklanStatus.INACTIVE)
+            .clickUrl(dto.getClickUrl())
+            .position(dto.getPosition())
+            .impressions(dto.getImpressions() != null ? dto.getImpressions() : 0)
+            .clicks(dto.getClicks() != null ? dto.getClicks() : 0)
+            .build();
     }
     
-    private void updateIklanFromDTO(IklanModel iklan, IklanDTO dto) {
-        iklan.setTitle(dto.getTitle());
-        iklan.setImageUrl(dto.getImageUrl());
-        iklan.setStartDate(dto.getStartDate());
-        iklan.setEndDate(dto.getEndDate());
-        iklan.setStatus(dto.getStatus());
-        iklan.setClickUrl(dto.getClickUrl());
-    }
+        private void updateIklanFromDTO(IklanModel iklan, IklanDTO dto) {
+            iklan.setTitle(dto.getTitle());
+            iklan.setDescription(dto.getDescription());
+            iklan.setImageUrl(dto.getImageUrl());
+            iklan.setStartDate(dto.getStartDate());
+            iklan.setEndDate(dto.getEndDate());
+            iklan.setStatus(dto.getStatus());
+            iklan.setClickUrl(dto.getClickUrl());
+            iklan.setPosition(dto.getPosition());
+        }
     
     private IklanStatus parseStatus(String statusParam) {
         if (statusParam == null || statusParam.isEmpty()) {
@@ -249,23 +255,25 @@ public class IklanServiceImpl implements IklanService {
                 .code(statusCode)
                 .success(true)
                 .message(message)
-                .data(IklanResponseDTO.IklanDataDTO.builder()
-                        .advertisement(dto)
-                        .build())
+                .data(dto)
                 .build();
     }
     
     private IklanDTO mapToDTO(IklanModel model) {
         return IklanDTO.builder()
-                .id(model.getId())
-                .title(model.getTitle())
-                .imageUrl(model.getImageUrl())
-                .startDate(model.getStartDate())
-                .endDate(model.getEndDate())
-                .status(model.getStatus())
-                .clickUrl(model.getClickUrl())
-                .createdAt(model.getCreatedAt())
-                .updatedAt(model.getUpdatedAt())
-                .build();
+            .id(model.getId())
+            .title(model.getTitle())
+            .description(model.getDescription())
+            .imageUrl(model.getImageUrl())
+            .startDate(model.getStartDate())
+            .endDate(model.getEndDate())
+            .status(model.getStatus())
+            .clickUrl(model.getClickUrl())
+            .position(model.getPosition())
+            .impressions(model.getImpressions())
+            .clicks(model.getClicks())
+            .createdAt(model.getCreatedAt())
+            .updatedAt(model.getUpdatedAt())
+            .build();
     }
 }

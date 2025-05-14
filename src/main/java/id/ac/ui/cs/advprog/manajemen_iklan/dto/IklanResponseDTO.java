@@ -13,7 +13,7 @@ public class IklanResponseDTO {
     private int code;
     private boolean success;
     private String message;
-    private IklanDataDTO data;
+    private Object data;
     
     @Data
     @Builder
@@ -21,7 +21,6 @@ public class IklanResponseDTO {
     @AllArgsConstructor
     public static class IklanDataDTO {
         private List<IklanDTO> advertisements;
-        private IklanDTO advertisement;
         private PaginationDTO pagination;
     }
     
