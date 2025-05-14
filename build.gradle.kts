@@ -30,6 +30,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
+	implementation("org.springframework.boot:spring-boot-starter-cache")
+    implementation("org.ehcache:ehcache:3.10.8")
 
 	
 	// Add database dependency
