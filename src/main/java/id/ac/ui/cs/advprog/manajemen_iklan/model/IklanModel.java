@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -31,10 +32,14 @@ public class IklanModel {
     
     @Id
     @GeneratedValue(generator = "uuid")
+    @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
     
     @Column(nullable = false)
     private String title;
+    
+    @Column(columnDefinition = "TEXT")
+    private String description;
     
     @Column(nullable = false)
     private String imageUrl;
@@ -49,14 +54,19 @@ public class IklanModel {
     @Column(nullable = false)
     private IklanStatus status;
     
-    @Column
     private String clickUrl;
     
+    private String position;
+    
+    @Builder.Default
+    private Integer impressions = 0;
+    
+    @Builder.Default
+    private Integer clicks = 0;
+    
     @CreatedDate
-    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
     @LastModifiedDate
-    @Column(nullable = false)
     private LocalDateTime updatedAt;
 }
