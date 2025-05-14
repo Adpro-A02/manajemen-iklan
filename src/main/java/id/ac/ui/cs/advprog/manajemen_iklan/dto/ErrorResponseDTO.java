@@ -3,6 +3,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.Map;
 
 @Data
 @Builder
@@ -12,4 +13,5 @@ public class ErrorResponseDTO {
     private int code;
     private boolean success;
     private String message;
+    private Map<String, String> errors;
 }
