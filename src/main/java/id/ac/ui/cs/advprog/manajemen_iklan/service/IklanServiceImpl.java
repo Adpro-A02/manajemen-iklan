@@ -307,10 +307,31 @@ public class IklanServiceImpl implements IklanService {
         if (!dto.getEndDate().isAfter(dto.getStartDate())) {
             throw new IllegalArgumentException("Tanggal selesai harus setelah tanggal mulai");
         }
+        if (dto.getTitle().length() > 100) {
+        throw new IllegalArgumentException("Judul iklan tidak boleh lebih dari 100 karakter");
+        }
+    
+        // Description length validation
+        if (dto.getDescription() != null && dto.getDescription().length() > 500) {
+            throw new IllegalArgumentException("Deskripsi iklan tidak boleh lebih dari 500 karakter");
+        }
+        
+        // Position validation
+        if (dto.getPosition() != null && 
+            !dto.getPosition().equals("homepage_top") && 
+            !dto.getPosition().equals("homepage_middle") && 
+            !dto.getPosition().equals("homepage_bottom")) {
+            throw new IllegalArgumentException("Posisi harus berupa 'homepage_top', 'homepage_middle', atau 'homepage_bottom'");
+        }
+        
+        // For creation, validate startDate is in the future
+        if (dto.getId() == null && dto.getStartDate() != null && 
+            !dto.getStartDate().isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Tanggal mulai harus di masa depan");
+        }
     }
     
     private void sanitizeDTO(IklanDTO dto) {
-        // Call DTO's sanitize method if it exists
         try {
             dto.getClass().getMethod("sanitize").invoke(dto);
         } catch (Exception e) {
