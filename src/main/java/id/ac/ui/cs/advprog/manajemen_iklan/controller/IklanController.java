@@ -90,9 +90,13 @@ public class IklanController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<IklanResponseDTO> updateStatus(
             @PathVariable String id,
-            @RequestParam IklanStatus status) {
-        logger.info("Updating status of advertisement with id: {} to {}", id, status);
+            @Valid @RequestBody IklanDTO statusUpdate) {
         
+        logger.info("Updating status of advertisement with id: {} to {}", id, statusUpdate.getStatus());
+        
+        // Convert string to enum
+        IklanStatus status = statusUpdate.getStatus();
+
         IklanResponseDTO response = iklanService.updateAdvertisementStatus(id, status);
         return ResponseEntity.ok(response);
     }
