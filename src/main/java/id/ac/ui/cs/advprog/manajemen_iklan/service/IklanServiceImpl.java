@@ -1,5 +1,4 @@
 package id.ac.ui.cs.advprog.manajemen_iklan.service;
-
 import id.ac.ui.cs.advprog.manajemen_iklan.dto.IklanDTO;
 import id.ac.ui.cs.advprog.manajemen_iklan.dto.IklanResponseDTO;
 import id.ac.ui.cs.advprog.manajemen_iklan.enums.IklanStatus;
@@ -81,6 +80,7 @@ public class IklanServiceImpl implements IklanService {
     public IklanResponseDTO getAdvertisementById(String id) {
         logger.debug("Fetching advertisement with id: {}", id);
         
+        validateId(id);
         IklanModel iklan = findIklanById(id);
         
         return createDetailResponse(
@@ -95,6 +95,14 @@ public class IklanServiceImpl implements IklanService {
     @CacheEvict(value = "advertisementsCache", allEntries = true)
     public IklanResponseDTO createAdvertisement(IklanDTO iklanDTO) {
         logger.debug("Creating new advertisement: {}", iklanDTO.getTitle());
+        
+        // Validate DTO
+        validateAdvertisementDTO(iklanDTO);
+        
+        // Apply sanitization if the method exists
+        if (iklanDTO instanceof IklanDTO) {
+            sanitizeDTO(iklanDTO);
+        }
         
         IklanModel iklan = createIklanModelFromDTO(iklanDTO);
         IklanModel savedIklan = iklanRepository.save(iklan);
@@ -111,6 +119,15 @@ public class IklanServiceImpl implements IklanService {
     @CacheEvict(value = "advertisementsCache", allEntries = true)
     public IklanResponseDTO updateAdvertisement(String id, IklanDTO iklanDTO) {
         logger.debug("Updating advertisement with id: {}", id);
+        
+        // Validate inputs
+        validateId(id);
+        validateAdvertisementDTO(iklanDTO);
+        
+        // Apply sanitization if the method exists
+        if (iklanDTO instanceof IklanDTO) {
+            sanitizeDTO(iklanDTO);
+        }
         
         IklanModel existingIklan = findIklanById(id);
         updateIklanFromDTO(existingIklan, iklanDTO);
@@ -130,9 +147,9 @@ public class IklanServiceImpl implements IklanService {
     public IklanResponseDTO updateAdvertisementStatus(String id, IklanStatus status) {
         logger.debug("Updating status of advertisement with id: {} to {}", id, status);
         
-        if (status == null) {
-            throw new InvalidStatusException("Status tidak boleh kosong");
-        }
+        // Validate inputs
+        validateId(id);
+        validateStatus(status);
         
         IklanModel existingIklan = findIklanById(id);
         existingIklan.setStatus(status);
@@ -152,6 +169,7 @@ public class IklanServiceImpl implements IklanService {
     public IklanResponseDTO deleteAdvertisement(String id) {
         logger.debug("Deleting advertisement with id: {}", id);
         
+        validateId(id);
         IklanModel existingIklan = findIklanById(id);
         iklanRepository.delete(existingIklan);
         
@@ -162,7 +180,79 @@ public class IklanServiceImpl implements IklanService {
                 .build();
     }
     
+    @Transactional
+    public void incrementImpressions(String id) {
+        logger.debug("Incrementing impressions for advertisement with id: {}", id);
+        
+        validateId(id);
+        IklanModel iklan = findIklanById(id);
+        iklan.setImpressions(iklan.getImpressions() + 1);
+        iklanRepository.save(iklan);
+    }
+    
+    @Transactional
+    public void incrementClicks(String id) {
+        logger.debug("Incrementing clicks for advertisement with id: {}", id);
+        
+        validateId(id);
+        IklanModel iklan = findIklanById(id);
+        iklan.setClicks(iklan.getClicks() + 1);
+        iklanRepository.save(iklan);
+    }
+    
+    // Validation methods
+    
+    private void validateId(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("ID iklan tidak boleh kosong");
+        }
+    }
+    
+    private void validateStatus(IklanStatus status) {
+        if (status == null) {
+            throw new InvalidStatusException("Status iklan tidak boleh kosong");
+        }
+    }
+    
+    private void validateAdvertisementDTO(IklanDTO dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Data iklan tidak boleh kosong");
+        }
+        
+        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Judul iklan tidak boleh kosong");
+        }
+        
+        if (dto.getImageUrl() == null || dto.getImageUrl().trim().isEmpty()) {
+            throw new IllegalArgumentException("URL gambar iklan tidak boleh kosong");
+        }
+        
+        if (dto.getStartDate() == null) {
+            throw new IllegalArgumentException("Tanggal mulai iklan tidak boleh kosong");
+        }
+        
+        if (dto.getEndDate() == null) {
+            throw new IllegalArgumentException("Tanggal selesai iklan tidak boleh kosong");
+        }
+        
+        // Validate end date is after start date
+        if (!dto.getEndDate().isAfter(dto.getStartDate())) {
+            throw new IllegalArgumentException("Tanggal selesai harus setelah tanggal mulai");
+        }
+    }
+    
+    private void sanitizeDTO(IklanDTO dto) {
+        // Call DTO's sanitize method if it exists
+        try {
+            dto.getClass().getMethod("sanitize").invoke(dto);
+        } catch (Exception e) {
+            // Method doesn't exist or couldn't be called, just log and continue
+            logger.debug("Sanitize method not available for DTO: {}", e.getMessage());
+        }
+    }
+    
     // Helper methods
+    
     private Pageable createPageRequest(int pageNumber, int pageSize) {
         return PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
@@ -187,16 +277,16 @@ public class IklanServiceImpl implements IklanService {
             .build();
     }
     
-        private void updateIklanFromDTO(IklanModel iklan, IklanDTO dto) {
-            iklan.setTitle(dto.getTitle());
-            iklan.setDescription(dto.getDescription());
-            iklan.setImageUrl(dto.getImageUrl());
-            iklan.setStartDate(dto.getStartDate());
-            iklan.setEndDate(dto.getEndDate());
-            iklan.setStatus(dto.getStatus());
-            iklan.setClickUrl(dto.getClickUrl());
-            iklan.setPosition(dto.getPosition());
-        }
+    private void updateIklanFromDTO(IklanModel iklan, IklanDTO dto) {
+        iklan.setTitle(dto.getTitle());
+        iklan.setDescription(dto.getDescription());
+        iklan.setImageUrl(dto.getImageUrl());
+        iklan.setStartDate(dto.getStartDate());
+        iklan.setEndDate(dto.getEndDate());
+        iklan.setStatus(dto.getStatus());
+        iklan.setClickUrl(dto.getClickUrl());
+        iklan.setPosition(dto.getPosition());
+    }
     
     private IklanStatus parseStatus(String statusParam) {
         if (statusParam == null || statusParam.isEmpty()) {
