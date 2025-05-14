@@ -14,12 +14,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +55,7 @@ public class IklanServiceImpl implements IklanService {
         IklanStatus status = parseStatus(statusParam);
         
         // Create pagination request
-        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = createPageRequest(pageNumber, pageSize);
         
         // Fetch advertisements with filters
         Page<IklanModel> advertisementsPage = iklanRepository.findAllWithFilters(
@@ -69,7 +69,7 @@ public class IklanServiceImpl implements IklanService {
         
         logger.debug("Found {} advertisements matching the criteria", advertisementsPage.getTotalElements());
         
-        return createSuccessResponse(
+        return createListResponse(
                 advertisementsPage, 
                 pageNumber + 1, 
                 pageSize, 
@@ -81,19 +81,13 @@ public class IklanServiceImpl implements IklanService {
     public IklanResponseDTO getAdvertisementById(String id) {
         logger.debug("Fetching advertisement with id: {}", id);
         
-        IklanModel iklan = iklanRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Iklan dengan id " + id + " tidak ditemukan"));
+        IklanModel iklan = findIklanById(id);
         
-        IklanDTO iklanDTO = mapToDTO(iklan);
-        
-        return IklanResponseDTO.builder()
-                .code(200)
-                .success(true)
-                .message("Iklan berhasil diambil")
-                .data(IklanResponseDTO.IklanDataDTO.builder()
-                        .advertisement(iklanDTO)
-                        .build())
-                .build();
+        return createDetailResponse(
+                mapToDTO(iklan),
+                HttpStatus.OK.value(),
+                "Iklan berhasil diambil"
+        );
     }
     
     @Override
@@ -102,25 +96,14 @@ public class IklanServiceImpl implements IklanService {
     public IklanResponseDTO createAdvertisement(IklanDTO iklanDTO) {
         logger.debug("Creating new advertisement: {}", iklanDTO.getTitle());
         
-        IklanModel iklan = IklanModel.builder()
-                .title(iklanDTO.getTitle())
-                .imageUrl(iklanDTO.getImageUrl())
-                .startDate(iklanDTO.getStartDate())
-                .endDate(iklanDTO.getEndDate())
-                .status(iklanDTO.getStatus() != null ? iklanDTO.getStatus() : IklanStatus.INACTIVE)
-                .clickUrl(iklanDTO.getClickUrl())
-                .build();
-        
+        IklanModel iklan = createIklanModelFromDTO(iklanDTO);
         IklanModel savedIklan = iklanRepository.save(iklan);
         
-        return IklanResponseDTO.builder()
-                .code(201)
-                .success(true)
-                .message("Iklan berhasil dibuat")
-                .data(IklanResponseDTO.IklanDataDTO.builder()
-                        .advertisement(mapToDTO(savedIklan))
-                        .build())
-                .build();
+        return createDetailResponse(
+                mapToDTO(savedIklan),
+                HttpStatus.CREATED.value(),
+                "Iklan berhasil dibuat"
+        );
     }
     
     @Override
@@ -129,27 +112,16 @@ public class IklanServiceImpl implements IklanService {
     public IklanResponseDTO updateAdvertisement(String id, IklanDTO iklanDTO) {
         logger.debug("Updating advertisement with id: {}", id);
         
-        IklanModel existingIklan = iklanRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Iklan dengan id " + id + " tidak ditemukan"));
-        
-        // Update fields
-        existingIklan.setTitle(iklanDTO.getTitle());
-        existingIklan.setImageUrl(iklanDTO.getImageUrl());
-        existingIklan.setStartDate(iklanDTO.getStartDate());
-        existingIklan.setEndDate(iklanDTO.getEndDate());
-        existingIklan.setStatus(iklanDTO.getStatus());
-        existingIklan.setClickUrl(iklanDTO.getClickUrl());
+        IklanModel existingIklan = findIklanById(id);
+        updateIklanFromDTO(existingIklan, iklanDTO);
         
         IklanModel updatedIklan = iklanRepository.save(existingIklan);
         
-        return IklanResponseDTO.builder()
-                .code(200)
-                .success(true)
-                .message("Iklan berhasil diperbarui")
-                .data(IklanResponseDTO.IklanDataDTO.builder()
-                        .advertisement(mapToDTO(updatedIklan))
-                        .build())
-                .build();
+        return createDetailResponse(
+                mapToDTO(updatedIklan),
+                HttpStatus.OK.value(),
+                "Iklan berhasil diperbarui"
+        );
     }
     
     @Override
@@ -158,21 +130,20 @@ public class IklanServiceImpl implements IklanService {
     public IklanResponseDTO updateAdvertisementStatus(String id, IklanStatus status) {
         logger.debug("Updating status of advertisement with id: {} to {}", id, status);
         
-        IklanModel existingIklan = iklanRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Iklan dengan id " + id + " tidak ditemukan"));
+        if (status == null) {
+            throw new InvalidStatusException("Status tidak boleh kosong");
+        }
         
+        IklanModel existingIklan = findIklanById(id);
         existingIklan.setStatus(status);
         
         IklanModel updatedIklan = iklanRepository.save(existingIklan);
         
-        return IklanResponseDTO.builder()
-                .code(200)
-                .success(true)
-                .message("Status iklan berhasil diperbarui")
-                .data(IklanResponseDTO.IklanDataDTO.builder()
-                        .advertisement(mapToDTO(updatedIklan))
-                        .build())
-                .build();
+        return createDetailResponse(
+                mapToDTO(updatedIklan),
+                HttpStatus.OK.value(),
+                "Status iklan berhasil diperbarui"
+        );
     }
     
     @Override
@@ -181,19 +152,46 @@ public class IklanServiceImpl implements IklanService {
     public IklanResponseDTO deleteAdvertisement(String id) {
         logger.debug("Deleting advertisement with id: {}", id);
         
-        IklanModel existingIklan = iklanRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Iklan dengan id " + id + " tidak ditemukan"));
-        
+        IklanModel existingIklan = findIklanById(id);
         iklanRepository.delete(existingIklan);
         
         return IklanResponseDTO.builder()
-                .code(200)
+                .code(HttpStatus.OK.value())
                 .success(true)
                 .message("Iklan berhasil dihapus")
                 .build();
     }
     
     // Helper methods
+    private Pageable createPageRequest(int pageNumber, int pageSize) {
+        return PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+    
+    private IklanModel findIklanById(String id) {
+        return iklanRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Iklan dengan id " + id + " tidak ditemukan"));
+    }
+    
+    private IklanModel createIklanModelFromDTO(IklanDTO dto) {
+        return IklanModel.builder()
+                .title(dto.getTitle())
+                .imageUrl(dto.getImageUrl())
+                .startDate(dto.getStartDate())
+                .endDate(dto.getEndDate())
+                .status(dto.getStatus() != null ? dto.getStatus() : IklanStatus.INACTIVE)
+                .clickUrl(dto.getClickUrl())
+                .build();
+    }
+    
+    private void updateIklanFromDTO(IklanModel iklan, IklanDTO dto) {
+        iklan.setTitle(dto.getTitle());
+        iklan.setImageUrl(dto.getImageUrl());
+        iklan.setStartDate(dto.getStartDate());
+        iklan.setEndDate(dto.getEndDate());
+        iklan.setStatus(dto.getStatus());
+        iklan.setClickUrl(dto.getClickUrl());
+    }
+    
     private IklanStatus parseStatus(String statusParam) {
         if (statusParam == null || statusParam.isEmpty()) {
             return null;
@@ -217,7 +215,7 @@ public class IklanServiceImpl implements IklanService {
         }
     }
     
-    private IklanResponseDTO createSuccessResponse(Page<IklanModel> page, int currentPage, int limit, String message) {
+    private IklanResponseDTO createListResponse(Page<IklanModel> page, int currentPage, int limit, String message) {
         // Map entities to DTOs
         List<IklanDTO> advertisementDTOs = page.getContent().stream()
                 .map(this::mapToDTO)
@@ -239,10 +237,21 @@ public class IklanServiceImpl implements IklanService {
         
         // Create response
         return IklanResponseDTO.builder()
-                .code(200)
+                .code(HttpStatus.OK.value())
                 .success(true)
                 .message(message)
                 .data(dataDTO)
+                .build();
+    }
+    
+    private IklanResponseDTO createDetailResponse(IklanDTO dto, int statusCode, String message) {
+        return IklanResponseDTO.builder()
+                .code(statusCode)
+                .success(true)
+                .message(message)
+                .data(IklanResponseDTO.IklanDataDTO.builder()
+                        .advertisement(dto)
+                        .build())
                 .build();
     }
     

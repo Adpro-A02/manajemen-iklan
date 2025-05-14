@@ -21,6 +21,7 @@ public class IklanResponseDTO {
     @AllArgsConstructor
     public static class IklanDataDTO {
         private List<IklanDTO> advertisements;
+        private IklanDTO advertisement;
         private PaginationDTO pagination;
     }
     
