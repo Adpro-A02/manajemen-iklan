@@ -275,6 +275,11 @@ public class IklanServiceImpl implements IklanService {
         if (status == null) {
             throw new InvalidStatusException("Status iklan tidak boleh kosong");
         }
+        
+        // Validate that status is only ACTIVE or INACTIVE (not EXPIRED) for status updates
+        if (status != IklanStatus.ACTIVE && status != IklanStatus.INACTIVE) {
+            throw new InvalidStatusException("Status harus berupa 'active' atau 'inactive'");
+        }
     }
     
     private void validateAdvertisementDTO(IklanDTO dto) {
