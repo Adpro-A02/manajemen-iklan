@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class IklanDTO {
-    
+    public interface StatusUpdateValidation {}
     private String id;
     
     @NotBlank(message = "Title is required")
@@ -43,6 +43,7 @@ public class IklanDTO {
     @FutureOrPresent(message = "End date must be in the future or present")
     private LocalDateTime endDate;
     
+    @NotNull(message = "Status is required", groups = StatusUpdateValidation.class)
     private IklanStatus status;
     
     @Pattern(regexp = "^(https?|ftp)://.*$", message = "Click URL must be a valid URL", flags = Pattern.Flag.CASE_INSENSITIVE)
