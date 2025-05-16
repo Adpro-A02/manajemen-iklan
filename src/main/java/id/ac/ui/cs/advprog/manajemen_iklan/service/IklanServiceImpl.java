@@ -63,25 +63,17 @@ public class IklanServiceImpl implements IklanService {
         return cacheManager.cacheAdvertisements(
             page, limit, statusParam, startDateFrom, startDateTo, endDateFrom, endDateTo, search,
             () -> {
-                // Build specification for filtering
                 Specification<IklanModel> spec = specBuilder.buildFilterSpecification(
-                        status, startDateFrom, startDateTo, endDateFrom, endDateTo, search);
-                
-                // Fetch filtered advertisements
+                    status, startDateFrom, startDateTo, endDateFrom, endDateTo, search);
                 Page<IklanModel> advertisementsPage = iklanRepository.findAll(spec, pageable);
-                
-                // Map to DTOs
                 Page<IklanDTO> dtoPage = new PageImpl<>(
-                        iklanMapper.mapToDTOList(advertisementsPage.getContent()),
-                        pageable,
-                        advertisementsPage.getTotalElements()
+                    iklanMapper.mapToDTOList(advertisementsPage.getContent()),
+                    pageable,
+                    advertisementsPage.getTotalElements()
                 );
-                
                 logger.debug("Found {} advertisements matching the criteria", advertisementsPage.getTotalElements());
-                
-                // Create response
                 return responseFactory.createListResponse(
-                        dtoPage, pageNumber + 1, pageSize, "Daftar iklan berhasil diambil");
+                    dtoPage, pageNumber + 1, pageSize, "Daftar iklan berhasil diambil");
             }
         );
     }
@@ -89,11 +81,9 @@ public class IklanServiceImpl implements IklanService {
     @Override
     public IklanResponseDTO getAdvertisementById(String id) {
         logger.debug("Fetching advertisement with id: {}", id);
-        
         validator.validateId(id);
         IklanModel iklan = findIklanById(id);
         IklanDTO iklanDTO = iklanMapper.mapToDTO(iklan);
-        
         return responseFactory.createDetailResponse(
             iklanDTO, HttpStatus.OK.value(), "Detail iklan berhasil diambil"
         );
@@ -103,22 +93,16 @@ public class IklanServiceImpl implements IklanService {
     @Transactional
     public IklanResponseDTO createAdvertisement(IklanDTO iklanDTO) {
         logger.debug("Creating new advertisement: {}", iklanDTO.getTitle());
-        
-        // Validate DTO
         validator.validateAdvertisementDTO(iklanDTO);
         
-        // Create and save new entity
         IklanModel iklan = iklanMapper.createModelFromDTO(iklanDTO);
         IklanModel savedIklan = iklanRepository.save(iklan);
         
-        // Evict caches
         cacheManager.evictAllCaches();
-        
-        // Return response
         return responseFactory.createDetailResponse(
-                iklanMapper.mapToDTO(savedIklan),
-                HttpStatus.CREATED.value(),
-                "Iklan berhasil ditambahkan"  // Fixed to match documentation
+            iklanMapper.mapToDTO(savedIklan),
+            HttpStatus.CREATED.value(),
+            "Iklan berhasil ditambahkan"
         );
     }
     
@@ -126,28 +110,19 @@ public class IklanServiceImpl implements IklanService {
     @Transactional
     public IklanResponseDTO updateAdvertisement(String id, IklanDTO iklanDTO) {
         logger.debug("Updating advertisement with id: {}", id);
-        
-        // Validate inputs
         validator.validateId(id);
         validator.validateAdvertisementDTO(iklanDTO);
         
-        // Find existing entity
         IklanModel existingIklan = findIklanById(id);
-        
-        // Update entity from DTO
         iklanMapper.updateModelFromDTO(existingIklan, iklanDTO);
-        
-        // Save updated entity
         IklanModel updatedIklan = iklanRepository.save(existingIklan);
         
-        // Evict caches
         cacheManager.evictAllCaches();
         
-        // Return response
         return responseFactory.createDetailResponse(
-                iklanMapper.mapToDTO(updatedIklan),
-                HttpStatus.OK.value(),
-                "Iklan berhasil diperbarui"
+            iklanMapper.mapToDTO(updatedIklan),
+            HttpStatus.OK.value(),
+            "Iklan berhasil diperbarui"
         );
     }
     
@@ -155,28 +130,19 @@ public class IklanServiceImpl implements IklanService {
     @Transactional
     public IklanResponseDTO updateAdvertisementStatus(String id, IklanStatus status) {
         logger.debug("Updating status of advertisement with id: {} to {}", id, status);
-        
-        // Validate inputs
         validator.validateId(id);
         validator.validateStatus(status);
         
-        // Find existing entity
-        IklanModel existingIklan = findIklanById(id);
-        
-        // Update status
+        IklanModel existingIklan = findIklanById(id);    
         existingIklan.setStatus(status);
-        
-        // Save updated entity
         IklanModel updatedIklan = iklanRepository.save(existingIklan);
         
-        // Evict caches
         cacheManager.evictAllCaches();
         
-        // Return response
         return responseFactory.createStatusUpdateResponse(
-                updatedIklan.getId(),
-                updatedIklan.getStatus().toString().toLowerCase(),
-                updatedIklan.getUpdatedAt()
+            updatedIklan.getId(),
+            updatedIklan.getStatus().toString().toLowerCase(),
+            updatedIklan.getUpdatedAt()
         );
     }
     
@@ -189,7 +155,6 @@ public class IklanServiceImpl implements IklanService {
         IklanModel existingIklan = findIklanById(id);
         iklanRepository.delete(existingIklan);
         
-        // Evict caches
         cacheManager.evictAllCaches();
         
         return responseFactory.createDeleteResponse();
@@ -202,25 +167,19 @@ public class IklanServiceImpl implements IklanService {
         int maxResults = (limit == null || limit < 1) ? 3 : limit;
         
         return cacheManager.cachePublicAdvertisements(position, limit, () -> {
-            // Build specification for public ads
             Specification<IklanModel> spec = specBuilder.buildPublicAdSpecification(position);
-            
-            // Fetch a limited number of advertisements
             Pageable pageable = PageRequest.of(0, maxResults, Sort.by(Sort.Direction.DESC, "createdAt"));
             Page<IklanModel> advertisementsPage = iklanRepository.findAll(spec, pageable);
             
             logger.debug("Found {} public advertisements", advertisementsPage.getNumberOfElements());
-            
-            // Map to public DTOs
+
             List<IklanDTO> publicAdDTOs = iklanMapper.mapToPublicDTOList(advertisementsPage.getContent());
-            
-            // Create response without pagination
+
             return responseFactory.createPublicListResponse(
-                    publicAdDTOs, "Daftar iklan berhasil diambil");
+                publicAdDTOs, "Daftar iklan berhasil diambil");
         });
     }
     
-    // Delegate tracking methods to the tracking service
     public void incrementImpressions(String id) {
         trackingService.incrementImpressions(id);
     }
@@ -229,7 +188,6 @@ public class IklanServiceImpl implements IklanService {
         trackingService.incrementClicks(id);
     }
     
-    // Helper methods
     private IklanModel findIklanById(String id) {
         return iklanRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Iklan dengan id " + id + " tidak ditemukan"));

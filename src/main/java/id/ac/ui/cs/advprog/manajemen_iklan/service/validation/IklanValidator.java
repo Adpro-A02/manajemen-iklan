@@ -21,7 +21,6 @@ public class IklanValidator {
             throw new InvalidStatusException("Status iklan tidak boleh kosong");
         }
         
-        // Validate that status is only ACTIVE or INACTIVE (not EXPIRED) for status updates
         if (status != IklanStatus.ACTIVE && status != IklanStatus.INACTIVE) {
             throw new InvalidStatusException("Status harus berupa 'active' atau 'inactive'");
         }
@@ -64,12 +63,10 @@ public class IklanValidator {
             throw new IllegalArgumentException("Tanggal selesai iklan tidak boleh kosong");
         }
         
-        // Validate end date is after start date
         if (!endDate.isAfter(startDate)) {
             throw new IllegalArgumentException("Tanggal selesai harus setelah tanggal mulai");
         }
         
-        // For creation, validate startDate is in the future
         if (isNewAd && !startDate.isAfter(LocalDateTime.now())) {
             throw new IllegalArgumentException("Tanggal mulai harus di masa depan");
         }
