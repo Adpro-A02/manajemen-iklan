@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -23,7 +24,8 @@ public class IklanController {
     private static final Logger logger = LoggerFactory.getLogger(IklanController.class);
     private final IklanService iklanService;
     
-    // get all ads
+    // get all ads - Admin can see all, Users only see their own
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<IklanResponseDTO> getAllAdvertisements(
             @RequestParam(required = false) Integer page,
@@ -44,7 +46,8 @@ public class IklanController {
         return ResponseEntity.ok(response);
     }
     
-    //create
+    // create - Both ADMIN and USER can create ads
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     @PostMapping
     public ResponseEntity<IklanResponseDTO> createAdvertisement(@Valid @RequestBody IklanDTO iklanDTO) {
         logger.info("Creating new advertisement: {}", iklanDTO.getTitle());
@@ -54,7 +57,8 @@ public class IklanController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
-    //get by id
+    // get by id - Both ADMIN and USER can view details
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     @GetMapping("/{id}")
     public ResponseEntity<IklanResponseDTO> getAdvertisementById(@PathVariable String id) {
         logger.info("Getting advertisement with id: {}", id);
@@ -64,7 +68,8 @@ public class IklanController {
         return ResponseEntity.ok(response);
     }
     
-    //update ad
+    // update ad - Admin can update any ad, Users can only update their own
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     @PutMapping("/{id}")
     public ResponseEntity<IklanResponseDTO> updateAdvertisement(
             @PathVariable String id, 
@@ -76,7 +81,8 @@ public class IklanController {
         return ResponseEntity.ok(response);
     }
     
-    //delete ad
+    // delete ad - Only ADMIN can delete ads
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<IklanResponseDTO> deleteAdvertisement(@PathVariable String id) {
         logger.info("Deleting advertisement with id: {}", id);
@@ -86,7 +92,8 @@ public class IklanController {
         return ResponseEntity.ok(response);
     }
 
-    //update status
+    // update status - Only ADMIN can change status
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<IklanResponseDTO> updateStatus(
             @PathVariable String id,
