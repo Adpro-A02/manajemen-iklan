@@ -14,24 +14,18 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Bean
+     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
-                // Define which endpoints need to be authenticated
-                // For now, we'll require authentication for all advertisement endpoints
-                .requestMatchers("/api/v1/advertisements/**").authenticated()
-                // You can add more specific rules as needed
-                .anyRequest().authenticated()
+                // Allow all requests for now during development
+                .anyRequest().permitAll()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(STATELESS));
             
-        // Additional security configuration will go here
-        // Such as JWT token filter, OAuth2 setup, etc.
-        
         return http.build();
     }
+}
     
     // Add more beans as needed (e.g., AuthenticationProvider, PasswordEncoder, etc.)
-}
