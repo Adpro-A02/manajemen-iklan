@@ -16,43 +16,43 @@ public class ResponseFactory {
     public IklanResponseDTO createListResponse(Page<IklanDTO> page, int currentPage, int limit, String message) {
         // Create pagination info
         IklanResponseDTO.PaginationDTO paginationDTO = IklanResponseDTO.PaginationDTO.builder()
-                .currentPage(currentPage)
-                .totalPages(page.getTotalPages())
-                .totalItems(page.getTotalElements())
-                .limit(limit)
-                .build();
+            .currentPage(currentPage)
+            .totalPages(page.getTotalPages())
+            .totalItems(page.getTotalElements())
+            .limit(limit)
+            .build();
         
         // Create data object
         IklanResponseDTO.IklanDataDTO dataDTO = IklanResponseDTO.IklanDataDTO.builder()
-                .advertisements(page.getContent())
-                .pagination(paginationDTO)
-                .build();
+            .advertisements(page.getContent())
+            .pagination(paginationDTO)
+            .build();
         
         // Create response
         return IklanResponseDTO.builder()
-                .code(HttpStatus.OK.value())
-                .success(true)
-                .message(message)
-                .data(dataDTO)
-                .build();
+            .code(HttpStatus.OK.value())
+            .success(true)
+            .message(message)
+            .data(dataDTO)
+            .build();
     }
     
     public IklanResponseDTO createDetailResponse(IklanDTO dto, int statusCode, String message) {
         return IklanResponseDTO.builder()
-                .code(statusCode)
-                .success(true)
-                .message(message)
-                .data(dto)
-                .build();
+            .code(statusCode)
+            .success(true)
+            .message(message)
+            .data(dto)
+            .build();
     }
     
     public IklanResponseDTO createPublicListResponse(List<IklanDTO> dtos, String message) {
         return IklanResponseDTO.builder()
-                .code(HttpStatus.OK.value())
-                .success(true)
-                .message(message)
-                .data(Map.of("advertisements", dtos))
-                .build();
+            .code(HttpStatus.OK.value())
+            .success(true)
+            .message(message)
+            .data(Map.of("advertisements", dtos))
+            .build();
     }
     
     public IklanResponseDTO createStatusUpdateResponse(String id, String status, Object updatedAt) {
@@ -71,9 +71,27 @@ public class ResponseFactory {
     
     public IklanResponseDTO createDeleteResponse() {
         return IklanResponseDTO.builder()
-                .code(HttpStatus.OK.value())
-                .success(true)
-                .message("Iklan berhasil dihapus")
-                .build();
+            .code(HttpStatus.OK.value())
+            .success(true)
+            .message("Iklan berhasil dihapus")
+            .build();
+    }
+
+    public IklanResponseDTO createErrorResponse(int statusCode, String message) {
+        return IklanResponseDTO.builder()
+        .code(statusCode)
+        .success(false)
+        .message(message)
+        .data(null)
+        .build();
+    }
+
+    public IklanResponseDTO createCustomResponse(Object data, int statusCode, String message) {
+        return IklanResponseDTO.builder()
+            .code(statusCode)
+            .success(true)
+            .message(message)
+            .data(data)
+            .build();
     }
 }
