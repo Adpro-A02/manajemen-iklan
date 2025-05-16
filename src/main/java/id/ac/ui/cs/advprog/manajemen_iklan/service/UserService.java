@@ -1,6 +1,5 @@
 package id.ac.ui.cs.advprog.manajemen_iklan.service;
 
-import id.ac.ui.cs.advprog.manajemen_iklan.dto.IklanResponseDTO;
 import id.ac.ui.cs.advprog.manajemen_iklan.model.UserModel;
 import id.ac.ui.cs.advprog.manajemen_iklan.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
