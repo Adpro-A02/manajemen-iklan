@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -161,34 +162,57 @@ public class IklanServiceImpl implements IklanService {
     }
     
     @Override
-    public IklanResponseDTO getPublicAdvertisements(String position, Integer limit) {
-        logger.debug("Fetching public advertisements with position: {}, limit: {}", position, limit);
-        
-        int maxResults = (limit == null || limit < 1) ? 3 : limit;
-        
-        return cacheManager.cachePublicAdvertisements(position, limit, () -> {
-            Specification<IklanModel> spec = specBuilder.buildPublicAdSpecification(position);
-            Pageable pageable = PageRequest.of(0, maxResults, Sort.by(Sort.Direction.DESC, "createdAt"));
-            Page<IklanModel> advertisementsPage = iklanRepository.findAll(spec, pageable);
-            
-            logger.debug("Found {} public advertisements", advertisementsPage.getNumberOfElements());
+public IklanResponseDTO getPublicAdvertisements(String position, Integer limit) {
+    logger.debug("Fetching public advertisements with position: {}, limit: {}", position, limit);
+    
+    int maxResults = (limit == null || limit < 1) ? 3 : limit;
 
-            List<IklanDTO> publicAdDTOs = iklanMapper.mapToPublicDTOList(advertisementsPage.getContent());
+    // Get advertisements from cache or database
+    IklanResponseDTO response = cacheManager.cachePublicAdvertisements(position, limit, () -> {
+        Specification<IklanModel> spec = specBuilder.buildPublicAdSpecification(position);
+        Pageable pageable = PageRequest.of(0, maxResults, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<IklanModel> advertisementsPage = iklanRepository.findAll(spec, pageable);
+        
+        logger.debug("Found {} public advertisements", advertisementsPage.getNumberOfElements());
 
-            return responseFactory.createPublicListResponse(
-                publicAdDTOs, "Daftar iklan berhasil diambil");
-        });
-    }
+        List<IklanDTO> publicAdDTOs = iklanMapper.mapToPublicDTOList(advertisementsPage.getContent());
+        
+        // Asynchronously increment impressions for each advertisement
+        if (!advertisementsPage.isEmpty()) {
+            asyncIncrementImpressions(advertisementsPage.getContent());
+        }
+
+        return responseFactory.createPublicListResponse(
+            publicAdDTOs, "Daftar iklan berhasil diambil");
+    });
+    
+    return response;
+}
     
 
 // helper methods
-    public void incrementImpressions(String id) {
-        trackingService.incrementImpressions(id);
+
+    private void asyncIncrementImpressions(List<IklanModel> advertisements) {
+    CompletableFuture.runAsync(() -> {
+        logger.debug("Asynchronously incrementing impressions for {} advertisements", advertisements.size());
+        for (IklanModel iklan : advertisements) {
+            try {
+                trackingService.incrementImpressions(iklan.getId());
+            } catch (Exception e) {
+                logger.error("Error incrementing impressions for ad ID {}: {}", iklan.getId(), e.getMessage(), e);
+                // Continue with other advertisements even if one fails
+            }
+        }
+        logger.debug("Finished incrementing impressions asynchronously");
+        });
     }
+    // public void incrementImpressions(String id) {
+    //     trackingService.incrementImpressions(id);
+    // }
     
     public void incrementClicks(String id) {
         trackingService.incrementClicks(id);
-    }
+        }
     
     private IklanModel findIklanById(String id) {
         return iklanRepository.findById(id)
