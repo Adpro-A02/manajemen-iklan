@@ -79,4 +79,25 @@ public class IklanSpecificationBuilder {
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
+
+    public Specification<IklanModel> buildDateRangeSpecification(LocalDateTime startDate, LocalDateTime endDate) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            /**
+            * Filter by date range - including ads that were active during the period
+            * An ad is considered active in the period if:
+            * - It started before the end of the period AND
+            * - It ended after the start of the period
+            **/
+            if (startDate != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("startDate"), endDate));
+            }
+            
+            if (endDate != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("endDate"), startDate));
+            }
+            
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
 }

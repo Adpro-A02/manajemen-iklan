@@ -22,11 +22,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -184,11 +188,86 @@ public IklanResponseDTO getPublicAdvertisements(String position, Integer limit) 
 
         return responseFactory.createPublicListResponse(
             publicAdDTOs, "Daftar iklan berhasil diambil");
-    });
-    
-    return response;
-}
-    
+        });
+        
+        return response;
+    }
+
+    @Async("taskExecutor") 
+    @Override
+    @Transactional
+    public CompletableFuture<IklanResponseDTO> updateAdvertisementStatusAsync(String id, IklanStatus status) {
+        logger.debug("Asynchronously updating status of advertisement with id: {} to {}", id, status);
+        
+        IklanResponseDTO response = updateAdvertisementStatus(id, status);
+        return CompletableFuture.completedFuture(response);
+    }
+
+    @Async("taskExecutor")
+    @Override
+    @Transactional
+    public CompletableFuture<IklanResponseDTO> batchUpdateStatusAsync(List<String> ids, IklanStatus status) {
+        logger.debug("Batch updating {} advertisements to status: {}", ids.size(), status);
+        
+        List<IklanModel> updated = new ArrayList<>();
+        for (String id : ids) {
+            try {
+                IklanModel existingIklan = iklanRepository.findById(id).orElse(null);
+                if (existingIklan != null) {
+                    existingIklan.setStatus(status);
+                    updated.add(iklanRepository.save(existingIklan));
+                }
+            } catch (Exception e) {
+                logger.error("Error updating ad {} to status {}: {}", id, status, e.getMessage());
+            }
+        }
+        
+        cacheManager.evictAllCaches();
+        
+        Map<String, Object> data = new HashMap<>();
+        data.put("totalProcessed", ids.size());
+        data.put("totalSuccessful", updated.size());
+        data.put("status", status);
+        
+        IklanResponseDTO response = responseFactory.createCustomResponse(
+            data, HttpStatus.OK.value(), "Batch status update completed"
+        );
+        
+        return CompletableFuture.completedFuture(response);
+    }
+
+    @Async("taskExecutor")
+    @Override
+    public CompletableFuture<IklanResponseDTO> generateAdvertisementReportAsync(
+            LocalDateTime startDate, LocalDateTime endDate) {
+        logger.debug("Generating advertisement report from {} to {}", startDate, endDate);
+        
+        // Simulate a long-running report generation process
+        try {
+            Thread.sleep(5000); // Simulate 5 seconds of processing
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        Specification<IklanModel> spec = specBuilder.buildDateRangeSpecification(startDate, endDate);
+        List<IklanModel> advertisements = iklanRepository.findAll(spec);
+        
+        // Generate report data
+        Map<String, Object> reportData = new HashMap<>();
+        reportData.put("totalAds", advertisements.size());
+        reportData.put("totalImpressions", advertisements.stream().mapToInt(IklanModel::getImpressions).sum());
+        reportData.put("totalClicks", advertisements.stream().mapToInt(IklanModel::getClicks).sum());
+        reportData.put("periodStart", startDate);
+        reportData.put("periodEnd", endDate);
+        reportData.put("generatedAt", LocalDateTime.now());
+        
+        IklanResponseDTO response = responseFactory.createCustomResponse(
+            reportData, HttpStatus.OK.value(), "Report generated successfully"
+        );
+        
+        return CompletableFuture.completedFuture(response);
+    }
+
 
 // helper methods
 
@@ -206,6 +285,7 @@ public IklanResponseDTO getPublicAdvertisements(String position, Integer limit) 
         logger.debug("Finished incrementing impressions asynchronously");
         });
     }
+    
     // public void incrementImpressions(String id) {
     //     trackingService.incrementImpressions(id);
     // }
