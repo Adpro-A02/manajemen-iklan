@@ -12,6 +12,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import id.ac.ui.cs.advprog.manajemen_iklan.exception.AsyncExceptionHandler;
+
 @Configuration
 @EnableAsync
 public class AsyncConfig implements AsyncConfigurer {
@@ -63,16 +65,10 @@ public class AsyncConfig implements AsyncConfigurer {
         return taskExecutor();
     }
     
+    @Bean
     @Override
     public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
-        return (ex, method, params) -> {
-            logger.error(
-                "Async error in method '{}' with parameters {}: {}",
-                method.getName(),
-                params,
-                ex.getMessage(),
-                ex
-            );
-        };
+        return new AsyncExceptionHandler();
     }
+    
 }
