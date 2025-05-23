@@ -15,6 +15,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/advertisements")
@@ -106,5 +108,33 @@ public class IklanController {
 
         IklanResponseDTO response = iklanService.updateAdvertisementStatus(id, status);
         return ResponseEntity.ok(response);
+    }
+
+    
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/batch-status")
+    public ResponseEntity<Void> batchUpdateStatus(
+            @Valid @RequestBody Map<String, Object> request) {
+        
+        @SuppressWarnings("unchecked")
+        List<String> ids = (List<String>) request.get("ids");
+        IklanStatus status = IklanStatus.valueOf((String) request.get("status"));
+        
+        // Start async processing and return immediately
+        iklanService.batchUpdateStatusAsync(ids, status);
+        
+        return ResponseEntity.accepted().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/reports/generate")
+    public ResponseEntity<Void> generateReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        
+        // Start async report generation and return immediately
+        iklanService.generateAdvertisementReportAsync(startDate, endDate);
+        
+        return ResponseEntity.accepted().build();
     }
 }
