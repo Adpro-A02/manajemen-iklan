@@ -35,11 +35,39 @@ jobs:
 
     - name: Deploy to EC2
       run: |
+        # Stop the service first
+        ssh -o StrictHostKeyChecking=no -i $HOME/key.pem ubuntu@ec2-3-92-62-56.compute-1.amazonaws.com '
+          sudo systemctl stop manajemen-iklan || true
+        '
+        
+        # Install Java 21 if not already installed
+        ssh -o StrictHostKeyChecking=no -i $HOME/key.pem ubuntu@ec2-3-92-62-56.compute-1.amazonaws.com '
+          echo "=== Checking Current Java Version ===" &&
+          java -version || echo "Java not found" &&
+          
+          echo "=== Installing Java 21 ===" &&
+          sudo apt update &&
+          sudo apt install -y openjdk-21-jdk &&
+          
+          echo "=== Setting Java 21 as Default ===" &&
+          sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-21-openjdk-amd64/bin/java 1 &&
+          sudo update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java &&
+          
+          echo "=== Verifying Java 21 Installation ===" &&
+          java -version &&
+          
+          echo "=== Creating Deployment Directory ===" &&
+          mkdir -p /home/ubuntu/deployment
+        '
+        
         # Copy JAR to EC2
         scp -o StrictHostKeyChecking=no -i $HOME/key.pem build/libs/*.jar ubuntu@ec2-3-92-62-56.compute-1.amazonaws.com:/home/ubuntu/deployment/
         
-        # Restart services
+        # Start services
         ssh -o StrictHostKeyChecking=no -i $HOME/key.pem ubuntu@ec2-3-92-62-56.compute-1.amazonaws.com '
-          sudo systemctl restart helloworld &&
-          sudo systemctl restart nginx
+          sudo systemctl start manajemen-iklan &&
+          sudo systemctl enable manajemen-iklan &&
+          sudo systemctl restart nginx &&
+          sleep 5 &&
+          sudo systemctl status manajemen-iklan
         '
