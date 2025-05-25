@@ -15,17 +15,21 @@ public class AsyncExceptionHandler implements AsyncUncaughtExceptionHandler {
 
     @Override
     public void handleUncaughtException(Throwable ex, Method method, Object... params) {
+        String methodName = method != null ? method.getName() : "unknown";
+        String paramString = params != null ? Arrays.toString(params) : "[]";
+        String exceptionMessage = ex != null ? ex.getMessage() : "null";
+        
         logger.error(
             "Async method '{}' failed with parameters {} and exception: {}",
-            method.getName(),
-            Arrays.toString(params),
-            ex.getMessage(),
+            methodName,
+            paramString,
+            exceptionMessage,
             ex
         );
         
         // Additional error handling like notifications or retries could be added here
         if (ex instanceof ResourceNotFoundException) {
-            logger.warn("Resource not found in async operation: {}", ex.getMessage());
+            logger.warn("Resource not found in async operation: {}", exceptionMessage);
         } else {
             logger.error("Critical error in async operation", ex);
         }
