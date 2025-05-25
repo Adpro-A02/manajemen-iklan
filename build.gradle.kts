@@ -2,6 +2,7 @@ plugins {
 	java
 	id("org.springframework.boot") version "3.4.5"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("jacoco")
 }
 
 group = "id.ac.ui.cs.advprog"
@@ -42,6 +43,55 @@ dependencies {
 
 }
 
-tasks.withType<Test> {
-	useJUnitPlatform()
+tasks.test {
+    useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport) // report is always generated after tests run
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test) // tests are required to run before generating the report
+    reports {
+        xml.required = true
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir("jacocoHtml")
+    }
+    
+    // Exclude certain classes from coverage if needed
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude("**/ManajemenIklanApplication.class")
+                exclude("**/config/**")
+                exclude("**/dto/**")
+                exclude("**/enums/**")
+            }
+        })
+    )
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.jacocoTestReport)
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.80".toBigDecimal() // 80% coverage requirement
+            }
+        }
+        rule {
+            enabled = false
+            element = "CLASS"
+            includes = listOf("id.ac.ui.cs.advprog.manajemen_iklan.*")
+            
+            limit {
+                counter = "LINE"
+                value = "TOTALCOUNT"
+                maximum = "200".toBigDecimal()
+            }
+        }
+    }
+}
+
+// Make check task depend on coverage verification
+tasks.check {
+    dependsOn(tasks.jacocoTestCoverageVerification)
 }
