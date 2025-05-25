@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/advertisements")
@@ -44,7 +46,7 @@ public class IklanController {
         return ResponseEntity.ok(response);
     }
     
-    //create
+    // create
     @PostMapping
     public ResponseEntity<IklanResponseDTO> createAdvertisement(@Valid @RequestBody IklanDTO iklanDTO) {
         logger.info("Creating new advertisement: {}", iklanDTO.getTitle());
@@ -54,7 +56,7 @@ public class IklanController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
-    //get by id
+    // get by id
     @GetMapping("/{id}")
     public ResponseEntity<IklanResponseDTO> getAdvertisementById(@PathVariable String id) {
         logger.info("Getting advertisement with id: {}", id);
@@ -64,7 +66,7 @@ public class IklanController {
         return ResponseEntity.ok(response);
     }
     
-    //update ad
+    // update ad
     @PutMapping("/{id}")
     public ResponseEntity<IklanResponseDTO> updateAdvertisement(
             @PathVariable String id, 
@@ -76,7 +78,7 @@ public class IklanController {
         return ResponseEntity.ok(response);
     }
     
-    //delete ad
+    // delete ad
     @DeleteMapping("/{id}")
     public ResponseEntity<IklanResponseDTO> deleteAdvertisement(@PathVariable String id) {
         logger.info("Deleting advertisement with id: {}", id);
@@ -86,7 +88,7 @@ public class IklanController {
         return ResponseEntity.ok(response);
     }
 
-    //update status
+    // update status
     @PatchMapping("/{id}/status")
     public ResponseEntity<IklanResponseDTO> updateStatus(
             @PathVariable String id,
@@ -94,10 +96,34 @@ public class IklanController {
         
         logger.info("Updating status of advertisement with id: {} to {}", id, statusUpdate.getStatus());
         
-        // Convert string to enum
         IklanStatus status = statusUpdate.getStatus();
 
         IklanResponseDTO response = iklanService.updateAdvertisementStatus(id, status);
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/batch-status")
+    public ResponseEntity<Void> batchUpdateStatus(
+            @Valid @RequestBody Map<String, Object> request) {
+        
+        @SuppressWarnings("unchecked")
+        List<String> ids = (List<String>) request.get("ids");
+        IklanStatus status = IklanStatus.valueOf((String) request.get("status"));
+        
+        // Start async processing and return immediately
+        iklanService.batchUpdateStatusAsync(ids, status);
+        
+        return ResponseEntity.accepted().build();
+    }
+
+    @GetMapping("/reports/generate")
+    public ResponseEntity<Void> generateReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        
+        // Start async report generation and return immediately
+        iklanService.generateAdvertisementReportAsync(startDate, endDate);
+        
+        return ResponseEntity.accepted().build();
     }
 }
