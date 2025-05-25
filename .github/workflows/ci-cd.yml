@@ -58,7 +58,7 @@ jobs:
 
     - name: Connect SSH and Restart Services
       run: |
-        ssh -o StrictHostKeyChecking=no -i $HOME/key.pem ubuntu@ec2-13-53-212-134.eu-north-1.compute.amazonaws.com '
+        ssh -o StrictHostKeyChecking=no -i $HOME/key.pem ubuntu@ec2-3-92-62-56.compute-1.amazonaws.com '
           sudo systemctl restart helloworld &&
           sudo systemctl restart nginx
         '
