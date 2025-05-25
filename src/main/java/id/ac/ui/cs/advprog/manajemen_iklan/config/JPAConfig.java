@@ -7,8 +7,6 @@ import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import jakarta.persistence.EntityManagerFactory;
@@ -24,16 +22,10 @@ import java.util.Optional;
     transactionManagerRef = "transactionManager"
 )
 public class JPAConfig {
-    // Auditor provider for tracking who created/updated entities
+    
     @Bean
     public AuditorAware<String> auditorProvider() {
-        return () -> {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return Optional.of("system");
-            }
-            return Optional.of(authentication.getName());
-        };
+        return () -> Optional.of("system"); // Simple system auditor
     }
 
     @Bean
