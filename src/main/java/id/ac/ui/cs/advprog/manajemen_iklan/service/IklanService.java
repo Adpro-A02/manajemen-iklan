@@ -5,6 +5,8 @@ import id.ac.ui.cs.advprog.manajemen_iklan.dto.IklanResponseDTO;
 import id.ac.ui.cs.advprog.manajemen_iklan.enums.IklanStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 // Service for managing advertisements
 public interface IklanService {
@@ -24,4 +26,7 @@ public interface IklanService {
     IklanResponseDTO updateAdvertisementStatus(String id, IklanStatus status);
     IklanResponseDTO deleteAdvertisement(String id);
     IklanResponseDTO getPublicAdvertisements(String position, Integer limit);
+    CompletableFuture<IklanResponseDTO> updateAdvertisementStatusAsync(String id, IklanStatus status);
+    CompletableFuture<IklanResponseDTO> batchUpdateStatusAsync(List<String> ids, IklanStatus status);
+    CompletableFuture<IklanResponseDTO> generateAdvertisementReportAsync(LocalDateTime startDate, LocalDateTime endDate);
 }
