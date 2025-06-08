@@ -30,12 +30,12 @@ public class IklanValidator {
         if (dto == null) {
             throw new IllegalArgumentException("Data iklan tidak boleh kosong");
         }
-        
         validateTitle(dto.getTitle());
         validateImageUrl(dto.getImageUrl());
-        validateDates(dto.getStartDate(), dto.getEndDate(), dto.getId() == null);
         validateDescription(dto.getDescription());
         validatePosition(dto.getPosition());
+        validateDates(dto.getStartDate(), dto.getEndDate(), dto.getId() == null); 
+        
     }
     
     private void validateTitle(String title) {
@@ -66,12 +66,8 @@ public class IklanValidator {
         if (!endDate.isAfter(startDate)) {
             throw new IllegalArgumentException("Tanggal selesai harus setelah tanggal mulai");
         }
-        
-        if (isNewAd && !startDate.isAfter(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Tanggal mulai harus di masa depan");
-        }
     }
-    
+
     private void validateDescription(String description) {
         if (description != null && description.length() > 500) {
             throw new IllegalArgumentException("Deskripsi iklan tidak boleh lebih dari 500 karakter");

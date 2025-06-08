@@ -3,6 +3,7 @@ plugins {
 	id("org.springframework.boot") version "3.4.5"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("jacoco")
+    id("org.sonarqube") version "5.1.0.4882"
 }
 
 group = "id.ac.ui.cs.advprog"
@@ -27,6 +28,7 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
 	implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
@@ -40,14 +42,37 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testImplementation("org.mockito:mockito-core")
+    runtimeOnly("com.h2database:h2")
+    runtimeOnly("org.postgresql:postgresql")
 
 }
 
+// SonarQube configuration
+sonar {
+    properties {
+        property("sonar.projectKey", "manajemen-iklan")
+        property("sonar.projectName", "Manajemen Iklan")
+        property("sonar.host.url", "http://localhost:9000")
+        property("sonar.token", "your-sonar-token-here")  // Will be overridden by environment
+        property("sonar.java.coveragePlugin", "jacoco")
+        property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml")
+        property("sonar.exclusions", "**/ManajemenIklanApplication.java,**/config/**,**/dto/**,**/enums/**")
+        property("sonar.cpd.exclusions", "**/dto/**,**/model/**")
+    }
+}
 tasks.test {
     useJUnitPlatform()
-    finalizedBy(tasks.jacocoTestReport) // report is always generated after tests run
+    finalizedBy(tasks.jacocoTestReport)
+    
+    // Set test profile explicitly
+    systemProperty("spring.profiles.active", "test")
+    
+    // JVM arguments for tests
+    jvmArgs = listOf(
+        "-XX:+EnableDynamicAgentLoading",
+        "-Dspring.profiles.active=test"
+    )
 }
-
 tasks.jacocoTestReport {
     dependsOn(tasks.test) // tests are required to run before generating the report
     reports {
@@ -94,4 +119,9 @@ tasks.jacocoTestCoverageVerification {
 // Make check task depend on coverage verification
 tasks.check {
     dependsOn(tasks.jacocoTestCoverageVerification)
+}
+
+// SonarQube task dependencies
+tasks.named("sonar") {
+    dependsOn(tasks.test, tasks.jacocoTestReport)
 }

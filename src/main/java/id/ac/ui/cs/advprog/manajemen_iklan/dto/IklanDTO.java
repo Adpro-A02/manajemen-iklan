@@ -38,9 +38,8 @@ public class IklanDTO {
     
     @NotNull(message = "Start date is required")
     private LocalDateTime startDate;
-    
+
     @NotNull(message = "End date is required")
-    @FutureOrPresent(message = "End date must be in the future or present")
     private LocalDateTime endDate;
     
     @NotNull(message = "Status is required", groups = StatusUpdateValidation.class)

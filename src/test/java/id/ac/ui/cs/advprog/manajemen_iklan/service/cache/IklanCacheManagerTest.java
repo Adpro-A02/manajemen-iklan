@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDateTime;
 import java.util.function.Supplier;
@@ -15,7 +16,9 @@ import java.util.function.Supplier;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
-@SpringBootTest
+@TestPropertySource(properties = {
+    "spring.cache.type=simple"
+})
 @ActiveProfiles("test")
 class IklanCacheManagerTest {
 
